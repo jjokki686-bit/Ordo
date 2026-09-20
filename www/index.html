@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ordo — 모바일 일정 & 모임 플래너</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app">
+  <div id="entry" role="dialog" aria-modal="true" aria-label="ordo 시작하기">
+    <div id="intro"><div class="calendar-leaf"><div class="intro-mark"><svg viewBox="0 0 100 100"><circle cx="45" cy="45" r="25" fill="none" stroke="currentColor" stroke-width="7"/><g class="orbit-dot"><circle cx="85" cy="65" r="8" fill="currentColor"/></g></svg><strong>ordo</strong></div><div class="intro-line">하루가 제자리를 찾는 순간.</div></div></div>
+    <div id="welcome" hidden><div class="welcome-brand">ordo<span>●</span></div><div class="welcome-art"><div class="mini-calendar"><span id="welcome-month">TODAY</span><strong id="welcome-day">19</strong><i>나만의 하루, 새로운 시작.</i></div></div><span class="eyebrow">A LITTLE ORDER. A LOT OF SPACE.</span><h1>하루에 여유를.<br>일상에 오르도.</h1><p>나의 일정부터 함께하는 약속까지,<br>한곳에서 자연스럽게 이어보세요.</p><button class="btn-main" onclick="showLogin()">로그인</button><button class="secondary" onclick="enterGuest()">게스트로 시작하기 ↗</button><small>가입 없이 시작하고, 이 브라우저에 저장하세요.</small></div>
+    <form id="login-form" hidden onsubmit="event.preventDefault();document.getElementById('login-note').textContent='이 배포본에는 인증 서버가 연결되지 않았습니다. 아래 게스트 버튼으로 이용해 주세요.'"><button type="button" class="back-login" onclick="showWelcome()">← 돌아가기</button><h1>다시 만나 반가워요.</h1><p>ordo 계정으로 로그인</p><label for="login-email">이메일</label><input id="login-email" type="email" autocomplete="username" required class="inp" placeholder="you@example.com"><label for="login-password">비밀번호</label><input id="login-password" type="password" autocomplete="current-password" required class="inp" placeholder="비밀번호"><p id="login-note" role="status">현재는 게스트 이용만 가능합니다. 계정 로그인은 연결 준비 중이에요.</p><button class="btn-main" type="submit">로그인 연결 확인</button><button type="button" class="secondary" onclick="enterGuest()">게스트로 이용하기</button></form>
+  </div>
+  <div id="toasts"></div>
+
+  <!-- ========== 헤더 ========== -->
+  <header class="s-surf bd-b px-4 py-2.5 flex justify-between items-center z-30" style="flex:none">
+    <button id="logo-btn" onclick="switchNav(0)" aria-label="홈으로 이동">
+      <svg id="logo-svg" viewBox="0 0 46 34">
+        <circle id="logo-ring" cx="17" cy="17" r="11"></circle>
+        <circle id="logo-dot" cx="37" cy="26" r="4"></circle>
+      </svg>
+      <span id="mode-label"><b>ordo</b></span>
+    </button>
+    <div class="flex items-center gap-2">
+      <button class="press s-elev c1 rounded-full flex items-center justify-center" style="width:44px;height:44px;font-size:20px;border:0" onclick="openSheet('sheet-ai')"><span class="ic" data-ic="sparkle"></span></button>
+      <button class="press s-elev c1 rounded-full flex items-center justify-center" style="width:44px;height:44px;font-size:20px;border:0" onclick="showToast('새로운 알림이 없습니다.')"><span class="ic" data-ic="bell"></span></button>
+    </div>
+  </header>
+
+  <!-- ========== 메인 ========== -->
+  <main id="main" class="flex-1 overflow-y-auto no-sb" style="padding-bottom:120px">
+
+    <!-- ========== [A] 홈 ========== -->
+    <section id="view-home" class="fade">
+      <div class="overview">
+        <div class="overview-heading"><span>YOUR DAILY ORBIT</span><div><button aria-label="이전 정보" onclick="slideOverview(-1)">←</button><button aria-label="다음 정보" onclick="slideOverview(1)">→</button></div></div>
+        <div class="overview-track no-sb" id="overview-track" tabindex="0" aria-label="오늘, 날씨, AI, 월간 현황을 좌우로 넘겨보세요">
+          <article class="overview-card today-card"><span class="eyebrow" id="today-label"></span><h1>오늘도, 나의 속도로.</h1><div id="clock">00:00:00</div><div class="hero-bottom"><span>시간을 정리하고, 하루를 가볍게.</span><span>01 / 04</span></div></article>
+          <article class="overview-card"><span class="eyebrow">WEATHER · 날씨</span><h2>외출 전, 한 번 더.</h2><div class="weather-value">☀ <span>22°</span></div><p>하남시 · 예시 날씨</p><small>실시간 날씨는 아직 연결되지 않았어요.</small></article>
+          <article class="overview-card"><span class="eyebrow">ORDO ASSISTANT</span><h2>복잡한 하루에<br>작은 여유를.</h2><p>일정을 적고, 함께할 시간을 찾아보세요.</p><button class="secondary" onclick="openSheet('sheet-ai')">AI 도우미 열기 ↗</button></article>
+          <article class="overview-card"><span class="eyebrow">TIME IN PERSPECTIVE</span><h2>차곡차곡 쌓이는 시간.</h2><p>월 또는 연간 흐름을 확인해 보세요.</p><div class="progress-row"><button id="m-toggle" onclick="toggleProgressMode()"></button><div id="m-grid" class="grid flex-1 gap-[2px]"></div><span id="m-pct"></span></div><small>날짜를 누르면 달력으로 이동해요.</small></article>
+        </div><div class="overview-dots" aria-label="정보 카드 선택"><button aria-label="오늘" onclick="goOverview(0)" class="active"></button><button aria-label="날씨" onclick="goOverview(1)" class=""></button><button aria-label="AI 안내" onclick="goOverview(2)" class=""></button><button aria-label="월·연 현황" onclick="goOverview(3)" class=""></button></div>
+      </div>
+
+      <div class="p-4">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="font-black text-xl tracking-tight">내 일정표</h2>
+          <button class="press rounded-full px-3.5 py-2 flex items-center gap-1.5 text-[12px] font-black"
+                  style="background:var(--elev);color:var(--t2);border:1px solid var(--line)"
+                  onclick="openCoordination()">
+            <span class="ic" style="font-size:16px" data-ic="compass"></span> 공동 일정 조율
+          </button>
+        </div>
+
+        <div class="s-elev rounded-2xl p-1 flex gap-1 mb-4" id="status-tabs">
+          <button class="flex-1 rounded-xl py-2.5 text-[13px] font-black" data-st="todo" onclick="setStatusTab('todo')">시작 전</button>
+          <button class="flex-1 rounded-xl py-2.5 text-[13px] font-black" data-st="doing" onclick="setStatusTab('doing')">진행 중</button>
+          <button class="flex-1 rounded-xl py-2.5 text-[13px] font-black" data-st="done" onclick="setStatusTab('done')">완료</button>
+        </div>
+
+        <div class="flex snapx gap-2 no-sb mb-4 pb-1" id="cat-tabs"></div>
+        <div id="task-list" class="grid grid-cols-2 gap-3"></div>
+      </div>
+    </section>
+
+    <!-- ========== [B] 달력 ========== -->
+    <section id="view-cal" class="p-4 hidden fade">
+      <div class="flex justify-between items-center mb-4">
+        <button class="press s-elev rounded-full flex items-center justify-center c1" style="width:44px;height:44px;border:0;font-size:22px" onclick="changeMonth(-1)"><span class="ic" data-ic="chev-l"></span></button>
+        <button class="press flex items-center gap-1.5 px-3 py-2 rounded-2xl s-elev c1" style="border:0" onclick="openSheet('sheet-jump')">
+          <span class="font-black text-xl tracking-tight" id="cal-title">YYYY. MM</span>
+          <span class="ic" style="font-size:18px" data-ic="chev-d"></span>
+        </button>
+        <button class="press s-elev rounded-full flex items-center justify-center c1" style="width:44px;height:44px;border:0;font-size:22px" onclick="changeMonth(1)"><span class="ic" data-ic="chev-r"></span></button>
+      </div>
+      <div class="grid grid-cols-7 text-center mb-2">
+        <div class="text-xs font-black" style="color:#EF4444">일</div>
+        <div class="text-xs font-black c3">월</div><div class="text-xs font-black c3">화</div>
+        <div class="text-xs font-black c3">수</div><div class="text-xs font-black c3">목</div>
+        <div class="text-xs font-black c3">금</div><div class="text-xs font-black" style="color:#3B82F6">토</div>
+      </div>
+      <div class="grid grid-cols-7 gap-1 mb-4" id="cal-grid"></div>
+
+      <div id="cal-detail" class="card p-4 hidden flex-col gap-3">
+        <div class="flex justify-between items-center bd-b pb-3">
+          <div class="font-black text-base" id="detail-title">2026. 09. 18</div>
+          <button class="c3 press" style="background:none;border:0;font-size:22px" onclick="closeDetail()"><span class="ic" data-ic="close"></span></button>
+        </div>
+        <div id="detail-list" class="flex flex-col gap-2.5" style="min-height:40px"></div>
+        <button class="press s-elev bd rounded-2xl py-3.5 text-sm font-black c2 flex justify-center items-center gap-1.5" onclick="openAddTask(selectedDate)">
+          <span class="ic" data-ic="plus"></span> 이 날짜에 일정 추가
+        </button>
+      </div>
+    </section>
+
+    <!-- ========== [C] 모임방 ========== -->
+    <section id="view-rooms" class="hidden fade">
+      <div class="px-4 pt-4 pb-3 flex justify-between items-center">
+        <h2 class="font-black text-2xl tracking-tight">모임방</h2>
+        <button class="press s-acc rounded-full px-4 py-2.5 text-[13px] font-black flex items-center gap-1" style="border:0" onclick="openCreateRoom()">
+          <span class="ic" data-ic="plus"></span> 새 모임
+        </button>
+      </div>
+      <div class="px-4 pb-2">
+        <div class="c3 text-xs font-black mb-2">📌 고정된 모임</div>
+        <div class="flex snapx gap-3 no-sb pb-1" id="pinned-list"></div>
+      </div>
+      <div class="px-4 pt-3 pb-4">
+        <div class="c3 text-xs font-black mb-2">💬 전체 모임방 · 꾹 누르면 설정</div>
+        <div class="flex flex-col gap-2.5" id="rooms-list"></div>
+      </div>
+    </section>
+
+    <!-- ========== [D] 내 정보 ========== -->
+    <section id="view-me" class="p-4 hidden fade">
+      <div class="font-black text-2xl mb-4 tracking-tight">마이페이지</div>
+      <div class="card profile-card"><div class="avatar">G</div><div><h2>게스트</h2><p>이 브라우저에 일정이 저장됩니다.</p></div></div>
+      <div class="card settings-card"><div><h3>화면 스타일</h3><p>나에게 편안한 화면으로</p></div><div class="theme-options" role="group" aria-label="화면 스타일"><button data-theme-choice="dark" onclick="setTheme('dark')">다크</button><button data-theme-choice="light" onclick="setTheme('light')">화이트</button><button data-theme-choice="system" onclick="setTheme('system')">시스템</button></div></div>
+      <button class="secondary account-entry" onclick="showWelcome()">로그인 화면으로 이동 ↗</button>
+      <div class="card overflow-hidden mb-6" style="padding:0">
+        <button class="w-full flex justify-between items-center p-4 bd-b press" style="background:none;border-left:0;border-right:0;border-top:0" onclick="showToast('내 정보 관리 (준비 중)')">
+          <span class="font-bold text-[15px] c1 flex items-center gap-3"><span class="ic c3" style="font-size:20px" data-ic="user"></span>내 정보 관리</span>
+          <span class="ic c3" data-ic="chev-r"></span>
+        </button>
+        <button class="w-full flex justify-between items-center p-4 bd-b press" style="background:none;border-left:0;border-right:0;border-top:0" onclick="switchNav(2)">
+          <span class="font-bold text-[15px] c1 flex items-center gap-3"><span class="ic c3" style="font-size:20px" data-ic="users"></span>내 모임방</span>
+          <span class="text-[12px] font-black px-2.5 py-1 rounded-full" style="background:rgba(59,130,246,.14);color:#3B82F6" id="me-room-count">0</span>
+        </button>
+        <button class="w-full flex justify-between items-center p-4 press" style="background:none;border:0" onclick="openDoneSheet()">
+          <span class="font-bold text-[15px] c1 flex items-center gap-3"><span class="ic c3" style="font-size:20px" data-ic="cal-check"></span>완료된 일정</span>
+          <span class="flex items-center gap-1"><span class="c2 text-[13px] font-black" id="me-done-count">0개</span><span class="ic c3" data-ic="chev-r"></span></span>
+        </button>
+      </div>
+
+      <div class="font-black text-lg mb-3 tracking-tight">구독 플랜</div>
+      <div class="flex flex-col gap-3" id="plans"></div>
+      <div class="h-6"></div>
+    </section>
+  </main>
+
+  <!-- ========== 하단 리퀴드 글라스 네비 ========== -->
+  <nav id="nav">
+    <div class="nav-inner">
+      <div id="nav-ind"></div>
+      <button class="nav-item active" onclick="switchNav(0)"><span class="ic" data-ic="home"></span><span>홈</span></button>
+      <button class="nav-item" onclick="switchNav(1)"><span class="ic" data-ic="calendar"></span><span>달력</span></button>
+      <button class="nav-item" onclick="switchNav(2)"><span class="ic" data-ic="chat"></span><span>모임방</span></button>
+      <button class="nav-item" onclick="switchNav(3)"><span class="ic" data-ic="user"></span><span>나</span></button>
+    </div>
+  </nav>
+
+  <button id="fab" onclick="openAddTask()"><span class="ic" data-ic="plus"></span></button>
+  <div id="backdrop" onclick="closeSheets()"></div>
+
+  <!-- ========== 시트: 일정 추가 ========== -->
+  <div id="sheet-task" class="sheet">
+    <div class="grab"></div>
+    <div class="p-5 pt-2 overflow-y-auto no-sb flex flex-col gap-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-lg font-black tracking-tight">새 일정 추가</h3>
+        <button class="c3" style="background:none;border:0;font-size:24px" onclick="closeSheets()"><span class="ic" data-ic="close"></span></button>
+      </div>
+      <input type="text" id="t-title" placeholder="무엇을 할까요?" class="inp" style="font-size:17px">
+      <textarea id="t-memo" placeholder="메모를 남겨보세요..." class="inp" style="height:72px;resize:none"></textarea>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="c3 text-xs font-black mb-1.5 block">날짜</label><input type="date" id="t-date" class="inp"></div>
+        <div><label class="c3 text-xs font-black mb-1.5 block">시간</label><input type="time" id="t-time" class="inp"></div>
+      </div>
+      <div>
+        <div class="flex justify-between items-center mb-2">
+          <label class="c3 text-xs font-black">분류</label>
+          <button class="press s-elev c2 text-xs font-black px-3 py-1.5 rounded-full flex items-center gap-1" style="border:0" onclick="toggleCatForm()"><span class="ic" data-ic="plus"></span> 분류 추가</button>
+        </div>
+        <div class="flex flex-wrap gap-2" id="cat-select"></div>
+        <div id="cat-form" class="hidden mt-3 s-elev rounded-2xl p-3 bd">
+          <input type="text" id="new-cat" placeholder="분류 이름 (예: 운동)" class="inp s-surf mb-2.5">
+          <div class="flex flex-wrap gap-2" id="cat-colors"></div>
+          <button class="btn-main mt-3" style="padding:13px;font-size:14px" onclick="saveCategory()">추가하기</button>
+        </div>
+      </div>
+      <button class="btn-main" onclick="saveTask()">저장하기</button>
+    </div>
+  </div>
+
+  <!-- ========== 시트: 날짜 이동 ========== -->
+  <div id="sheet-jump" class="sheet">
+    <div class="grab"></div>
+    <div class="p-5 pt-2 flex flex-col gap-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-lg font-black tracking-tight">날짜 이동</h3>
+        <button class="c3" style="background:none;border:0;font-size:24px" onclick="closeSheets()"><span class="ic" data-ic="close"></span></button>
+      </div>
+      <div class="flex items-center justify-between s-elev rounded-2xl p-2">
+        <button class="press c1" style="background:none;border:0;font-size:22px;padding:8px 14px" onclick="jumpYear(-1)"><span class="ic" data-ic="chev-l"></span></button>
+        <span class="font-black text-xl" id="jump-year">2026</span>
+        <button class="press c1" style="background:none;border:0;font-size:22px;padding:8px 14px" onclick="jumpYear(1)"><span class="ic" data-ic="chev-r"></span></button>
+      </div>
+      <div class="grid grid-cols-4 gap-2" id="jump-months"></div>
+      <div class="bd-t pt-4">
+        <label class="c3 text-xs font-black mb-1.5 block">특정 날짜로 바로 이동</label>
+        <input type="date" id="jump-date" class="inp mb-3">
+        <div class="flex gap-2">
+          <button class="press s-elev c1 rounded-2xl py-3.5 font-black text-sm flex-1" style="border:0" onclick="goToday()">오늘로</button>
+          <button class="btn-main flex-1" style="padding:14px" onclick="goPickedDate()">이동하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 시트: 공동 일정 조율 ========== -->
+  <div id="sheet-coord" class="sheet">
+    <div class="grab"></div>
+    <div class="p-5 pt-2 overflow-y-auto no-sb flex flex-col gap-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-lg font-black tracking-tight">AI 공동 일정 조율</h3>
+          <p class="c3 text-xs font-bold mt-1">앞으로 14일간의 여유도를 분석했어요</p>
+        </div>
+        <button class="c3" style="background:none;border:0;font-size:24px" onclick="closeSheets()"><span class="ic" data-ic="close"></span></button>
+      </div>
+      <div class="flex gap-3 text-xs font-black">
+        <span class="flex items-center gap-1.5"><i style="width:10px;height:10px;border-radius:99px;background:#22C55E;display:block"></i>여유</span>
+        <span class="flex items-center gap-1.5"><i style="width:10px;height:10px;border-radius:99px;background:#F59E0B;display:block"></i>보통</span>
+        <span class="flex items-center gap-1.5"><i style="width:10px;height:10px;border-radius:99px;background:#EF4444;display:block"></i>바쁨</span>
+      </div>
+      <div id="coord-summary" class="rounded-2xl p-4 text-sm font-bold leading-relaxed"></div>
+      <div class="flex flex-col gap-2" id="coord-list"></div>
+    </div>
+  </div>
+
+  <!-- ========== 시트: 모임 만들기 ========== -->
+  <div id="sheet-room" class="sheet">
+    <div class="grab"></div>
+    <div class="p-5 pt-2 overflow-y-auto no-sb flex flex-col gap-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-lg font-black tracking-tight" id="room-form-title">새 모임 만들기</h3>
+        <button class="c3" style="background:none;border:0;font-size:24px" onclick="closeSheets()"><span class="ic" data-ic="close"></span></button>
+      </div>
+      <div>
+        <label class="c3 text-xs font-black mb-1.5 block">모임 배너 사진</label>
+        <button id="banner-pick" class="press w-full rounded-2xl bd s-elev flex flex-col items-center justify-center gap-2 c3"
+                style="height:130px;background-size:cover;background-position:center;overflow:hidden" onclick="document.getElementById('banner-file').click()">
+          <span class="ic" style="font-size:26px" data-ic="image"></span>
+          <span class="text-xs font-black" id="banner-hint">탭해서 배너 사진 선택</span>
+        </button>
+        <input type="file" id="banner-file" accept="image/*" class="hidden" onchange="pickBanner(event)">
+      </div>
+      <div><label class="c3 text-xs font-black mb-1.5 block">모임 이름</label><input type="text" id="r-name" placeholder="예: 주말 러닝 크루" class="inp"></div>
+      <div><label class="c3 text-xs font-black mb-1.5 block">한 줄 소개</label><input type="text" id="r-desc" placeholder="무엇을 하는 모임인가요?" class="inp"></div>
+      <div>
+        <label class="c3 text-xs font-black mb-2 block">모임 분류</label>
+        <div class="flex flex-wrap gap-2 mb-3" id="room-cat-list"></div>
+        <div class="flex flex-wrap gap-2" id="room-color-list"></div>
+      </div>
+      <button class="btn-main" id="room-submit" onclick="submitRoom()">모임 개설하기</button>
+    </div>
+  </div>
+
+  <!-- ========== 시트: 모임 길게 누르기 옵션 ========== -->
+  <div id="sheet-roomopt" class="sheet">
+    <div class="grab"></div>
+    <div class="p-5 pt-2 flex flex-col gap-2.5">
+      <div class="flex justify-between items-center mb-1">
+        <h3 class="text-lg font-black tracking-tight" id="opt-title">모임 설정</h3>
+        <button class="c3" style="background:none;border:0;font-size:24px" onclick="closeSheets()"><span class="ic" data-ic="close"></span></button>
+      </div>
+      <button class="press s-elev c1 rounded-2xl py-4 font-black text-[15px] flex justify-center items-center gap-2" style="border:0" onclick="togglePin()"><span class="ic" data-ic="pin"></span> <span id="opt-pin-text">즐겨찾기 고정</span></button>
+      <button id="opt-settings" class="press s-elev c1 rounded-2xl py-4 font-black text-[15px] flex justify-center items-center gap-2" style="border:0" onclick="editRoom()"><span class="ic" data-ic="settings"></span> 방 설정 (방장)</button>
+      <button class="press rounded-2xl py-4 font-black text-[15px] flex justify-center items-center gap-2" style="background:rgba(239,68,68,.12);color:#EF4444;border:0" onclick="removeRoom()"><span class="ic" data-ic="trash"></span> 모임방 제거</button>
+    </div>
+  </div>
+
+  <!-- ========== 시트: 완료된 일정 ========== -->
+  <div id="sheet-done" class="sheet">
+    <div class="grab"></div>
+    <div class="p-5 pt-2 overflow-y-auto no-sb flex flex-col gap-4" style="max-height:78vh">
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-lg font-black tracking-tight">완료된 일정</h3>
+          <p class="c3 text-xs font-bold mt-1">캘린더에서 불러온 기록이에요</p>
+        </div>
+        <button class="c3" style="background:none;border:0;font-size:24px" onclick="closeSheets()"><span class="ic" data-ic="close"></span></button>
+      </div>
+      <div class="grid grid-cols-3 gap-2" id="done-stats"></div>
+      <div class="flex flex-col gap-4" id="done-list"></div>
+    </div>
+  </div>
+
+  <!-- ========== 시트: 일정 공유 (채팅) ========== -->
+  <div id="sheet-share" class="sheet">
+    <div class="grab"></div>
+    <div class="p-5 pt-2 flex flex-col gap-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-lg font-black tracking-tight">모임 일정 공유</h3>
+        <button class="c3" style="background:none;border:0;font-size:24px" onclick="closeSheets()"><span class="ic" data-ic="close"></span></button>
+      </div>
+      <input type="text" id="s-title" placeholder="일정 이름 (예: 정기 모임)" class="inp">
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="c3 text-xs font-black mb-1.5 block">날짜</label><input type="date" id="s-date" class="inp"></div>
+        <div><label class="c3 text-xs font-black mb-1.5 block">시간</label><input type="time" id="s-time" class="inp"></div>
+      </div>
+      <input type="text" id="s-place" placeholder="장소 (선택)" class="inp">
+      <div class="rounded-2xl p-3 text-xs font-bold flex items-center gap-2" style="background:rgba(34,197,94,.12);color:#22C55E">
+        <span class="ic" data-ic="check"></span> 공유하면 내 메인 캘린더에 자동으로 추가돼요
+      </div>
+      <button class="btn-main" onclick="shareSchedule()">모임방에 공유하기</button>
+    </div>
+  </div>
+
+  <!-- ========== 시트: AI 비서 ========== -->
+  <div id="sheet-ai" class="sheet" style="height:80%">
+    <div class="grab"></div>
+    <div class="p-4 bd-b flex justify-between items-center">
+      <h3 class="font-black text-base flex items-center gap-2"><span class="ic" style="color:#3B82F6" data-ic="sparkle"></span> AI 비서</h3>
+      <button class="c3" style="background:none;border:0;font-size:24px" onclick="closeSheets()"><span class="ic" data-ic="close"></span></button>
+    </div>
+    <div class="flex-1 p-4 overflow-y-auto no-sb flex flex-col gap-3 s-elev" id="ai-chat">
+      <div class="kbubble k-other" style="align-self:flex-start">안녕하세요! 무엇을 도와드릴까요?<br><span class="c3 text-xs">"내일 오후 3시 회의 추가해줘" 처럼 편하게 말해보세요.</span></div>
+    </div>
+    <div class="p-3 s-surf bd-t">
+      <div class="flex items-center s-elev rounded-full px-4 py-2.5 gap-2">
+        <input type="text" id="ai-input" placeholder="AI에게 요청하기..." class="flex-1 bg-transparent outline-none font-bold c1" style="border:0;font-size:15px;font-family:inherit" onkeypress="if(event.key==='Enter')sendAI()">
+        <button class="press" style="background:none;border:0;color:#3B82F6;font-size:22px" onclick="sendAI()"><span class="ic" data-ic="send"></span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 채팅방 (카카오톡 스타일) ========== -->
+  <div id="chatroom">
+    <header class="s-surf bd-b flex items-center gap-3 px-3 py-3" style="flex:none;padding-top:max(12px,env(safe-area-inset-top))">
+      <button class="press c1" style="background:none;border:0;font-size:26px" onclick="closeChat()"><span class="ic" data-ic="chev-l"></span></button>
+      <div class="flex-1 min-w-0">
+        <div class="font-black text-base line-1" id="chat-name">모임방</div>
+        <div class="c3 text-xs font-bold flex items-center gap-1"><span class="ic" data-ic="users"></span> <span id="chat-members">4</span>명</div>
+      </div>
+      <button class="press c1" style="background:none;border:0;font-size:24px" onclick="openChatShare()"><span class="ic" data-ic="cal-check"></span></button>
+      <button class="press c1" style="background:none;border:0;font-size:24px" onclick="chatMenu()"><span class="ic" data-ic="menu"></span></button>
+    </header>
+    <div class="flex-1 overflow-y-auto no-sb p-3 flex flex-col gap-2.5" id="chat-log"></div>
+    <div class="s-surf bd-t" style="flex:none">
+      <div class="flex items-end gap-2 p-2.5">
+        <button class="press c1" style="background:none;border:0;font-size:28px" onclick="toggleAttach()"><span class="ic" data-ic="plus"></span></button>
+        <textarea id="chat-input" rows="1" placeholder="메시지 입력" class="flex-1 s-elev rounded-2xl px-4 py-3 outline-none c1 font-bold" style="border:1px solid var(--line);font-size:15px;resize:none;max-height:90px;font-family:inherit"></textarea>
+        <button class="press rounded-full flex items-center justify-center" style="width:44px;height:44px;background:var(--bubble-me);color:#111;border:0;font-size:19px" onclick="sendChat()"><span class="ic" data-ic="send"></span></button>
+      </div>
+      <div id="attach-panel">
+        <div class="attach-grid">
+          <button class="attach-btn" onclick="openChatShare()"><span class="ic" style="color:#22C55E" data-ic="cal-check"></span>일정 공유</button>
+          <button class="attach-btn" onclick="attachPhoto()"><span class="ic" style="color:#F59E0B" data-ic="image"></span>사진</button>
+          <button class="attach-btn" onclick="attachVote()"><span class="ic" style="color:#6366F1" data-ic="poll"></span>투표</button>
+          <button class="attach-btn" onclick="attachPlace()"><span class="ic" style="color:#EF4444" data-ic="pin-map"></span>장소</button>
+          <button class="attach-btn" onclick="attachFile()"><span class="ic" style="color:#3B82F6" data-ic="file"></span>파일</button>
+          <button class="attach-btn" onclick="attachSettle()"><span class="ic" style="color:#14B8A6" data-ic="chart"></span>정산</button>
+          <button class="attach-btn" onclick="attachExcel()"><span class="ic" style="color:#10B981" data-ic="table"></span>엑셀 정리</button>
+          <button class="attach-btn" onclick="attachCoord()"><span class="ic" style="color:#A855F7" data-ic="compass"></span>일정 조율</button>
+        </div>
+      </div>
+      <div style="height:env(safe-area-inset-bottom)"></div>
+    </div>
+    <input type="file" id="chat-photo" accept="image/*" class="hidden" onchange="photoPicked(event)">
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ORDO FONT AND NAV PATCH START -->
+
+
+<!-- ORDO FONT AND NAV PATCH END -->
+
+
+
+
+<!-- ORDO CALENDAR SCALE PATCH START -->
+
+
+<!-- ORDO CALENDAR SCALE PATCH END -->
+
+<!-- ORDO ADS MOBILE PATCH START -->
+
+
+<!-- ORDO ADS MOBILE PATCH END -->
+  <script src="js/app.js"></script>
+</body>
+</html>
