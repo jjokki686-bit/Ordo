@@ -16,7 +16,7 @@ jobs:
       - name: 2. Node.js 세팅
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: 3. 의존성 설치 및 동기화
         run: |
