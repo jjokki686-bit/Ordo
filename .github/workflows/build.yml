@@ -1,0 +1,34 @@
+name: iOS App Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: 1. 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: 2. Node.js 세팅
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 3. 의존성 설치 및 동기화
+        run: |
+          npm install
+          npx cap sync ios
+
+      - name: 4. Xcode로 iOS 앱 빌드 검증
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+                     -scheme App \
+                     -destination generic/platform=iOS \
+                     -configuration Release \
+                     CODE_SIGNING_ALLOWED=NO \
+                     build
