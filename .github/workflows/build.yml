@@ -23,17 +23,21 @@ jobs:
           npm install
           npx cap sync ios
 
-      - name: 4. CocoaPods 설치 및 워크스페이스 구성
+      - name: 4. Xcode로 iOS 앱 빌드 검증
         run: |
           cd ios/App
-          pod install
-
-      - name: 5. Xcode로 iOS 앱 빌드 검증
-        run: |
-          cd ios/App
-          xcodebuild -workspace App.xcworkspace \
-                     -scheme App \
-                     -destination generic/platform=iOS \
-                     -configuration Release \
-                     CODE_SIGNING_ALLOWED=NO \
-                     build
+          if [ -d "App.xcworkspace" ]; then
+            xcodebuild -workspace App.xcworkspace \
+                       -scheme App \
+                       -destination generic/platform=iOS \
+                       -configuration Release \
+                       CODE_SIGNING_ALLOWED=NO \
+                       build
+          else
+            xcodebuild -project App.xcodeproj \
+                       -scheme App \
+                       -destination generic/platform=iOS \
+                       -configuration Release \
+                       CODE_SIGNING_ALLOWED=NO \
+                       build
+          fi
